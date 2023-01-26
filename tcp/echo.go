@@ -4,33 +4,50 @@ package tcp
 
 import (
 	"bufio"
-	"fmt"
+	"context"
 	"log"
 	"net"
 	"time"
+
+	"github.com/liamgheng/godis/lib/atomic"
 )
 
 type EchoHandler struct {
+	closing atomic.Boolean
 }
 
-func (h EchoHandler) Handle(conn net.Conn) {
+func (h *EchoHandler) Handle(ctx context.Context, conn net.Conn) {
 	defer conn.Close()
 	reader := bufio.NewReader(conn)
+	doneCh := make(chan struct{})
 
 	for {
+		if h.closing.Get() {
+			return
+		}
 		msg, err := reader.ReadString('\n')
 		if err != nil {
-			log.Fatal(err)
+			return
 		}
-		if msg == "PING\n" {
-			_, err = conn.Write([]byte("PONG\n"))
-			if err != nil {
-				log.Fatal(err)
-			}
-		} else {
-			log.Fatal(fmt.Sprintf("not support %v", msg))
+
+		go func() {
+			b := []byte(msg)
+			_, _ = conn.Write(b)
+			doneCh <- struct{}{}
+		}()
+
+		select {
+		case <-doneCh:
+			continue
+		case <-ctx.Done():
+			return
 		}
 	}
+}
+
+func (h *EchoHandler) Close() error {
+	h.closing.Set(true)
+	return nil
 }
 
 type EchoClient struct {

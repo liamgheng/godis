@@ -10,9 +10,9 @@ import (
 )
 
 func TestListenAndServe(t *testing.T) {
-	handler := EchoHandler{}
+	handler := &EchoHandler{}
 
-	listener, err := net.Listen("tcp", ":0")
+	listener, err := net.Listen("tcp", ":8000")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -28,5 +28,5 @@ func TestListenAndServe(t *testing.T) {
 	client := EchoClient{conn: conn}
 	res := client.Ping()
 
-	assert.Equal(t, "PONG\n", res)
+	assert.Equal(t, "PING\n", res)
 }
