@@ -3,7 +3,15 @@ package protocol
 const CLCR = "\r\n"
 
 type MultiBulk struct {
-	items [][]byte
+	Items [][]byte
+}
+
+type ProtocolErr struct {
+	Msg string
+}
+
+func (e ProtocolErr) Error() string {
+	return "protocol error: " + e.Msg
 }
 
 // NOTE 这些划线区分增加可读性
